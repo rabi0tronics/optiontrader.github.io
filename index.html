@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ProfitScout Replica Dashboard with Live Data</title>
+<style>
+  /* CSS styles from the earlier template */
+  * {
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    background: #1e1e2f;
+    color: #eee;
+  }
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #3a3a59;
+  }
+  .dashboard-header h1 {
+    color: #55a6f0;
+    font-weight: 700;
+    font-size: 2rem;
+  }
+  .menu {
+    display: flex;
+    gap: 12px;
+  }
+  .menu-btn {
+    background: #2c2c4c;
+    border: none;
+    padding: 10px 18px;
+    color: #ccc;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+  }
+  .menu-btn.active,
+  .menu-btn:hover {
+    background: #55a6f0;
+    color: #fff;
+  }
+  .dashboard-main {
+    margin-top: 20px;
+  }
+  .dashboard-section {
+    display: none;
+    animation: fadeIn 0.8s ease forwards;
+  }
+  .dashboard-section.active {
+    display: block;
+  }
+  .cards-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .card {
+    flex: 1 1 30%;
+    background: #272741;
+    padding: 20px;
+    border-radius: 7px;
+    box-shadow: 0 0 15px rgba(85, 166, 240, 0.25);
+    text-align: center;
+    min-width: 220px;
+  }
+  .card h3 {
+    color: #55a6f0;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .data-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #aaa;
+  }
+  .dashboard-footer {
+    margin-top: 35px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (max-width: 768px) {
+    .cards-row {
+      flex-direction: column;
+    }
+    .card {
+      flex: none;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>ProfitScout</h1>
+    <nav class="menu">
+      <button class="menu-btn active" data-section="stock-scout">Stock Scout</button>
+      <button class="menu-btn" data-section="smart-money-scout">Smart Money Scout</button>
+      <button class="menu-btn" data-section="index-scout">Index Scout</button>
+      <button class="menu-btn" data-section="trading-journal">Trading Journal</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-main">
+    <section id="stock-scout" class="dashboard-section active">
+      <h2>Stock Scout</h2>
+      <div class="cards-row">
+        <div class="card">
+          <h3>High Beta Stocks</h3>
+          <p class="data-value" id="high-beta">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Top Breakouts</h3>
+          <p class="data-value" id="top-breakouts">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Volume Leaders</h3>
+          <p class="data-value" id="volume-leaders">Loading...</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="smart-money-scout" class="dashboard-section">
+      <h2>Smart Money Scout</h2>
+      <div class="cards-row">
+        <div class="card">
+          <h3>Institutional Inflows</h3>
+          <p class="data-value" id="inst-inflows">Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Big Player Entries</h3>
+          <p class="data-value" id="big-player-entries">Loading...</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="index-scout" class="dashboard-section">
+      <h2>Index Scout</h2>
+      <canvas id="indexChart"></canvas>
+    </section>
+
+    <section id="trading-journal" class="dashboard-section">
+      <h2>Trading Journal</h2>
+      <p>Feature coming soon...</p>
+    </section>
+  </main>
+
+  <footer class="dashboard-footer">
+    <p>© 2025 ProfitScout Replica. All rights reserved.</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Tab switching logic
+  const menuButtons = document.querySelectorAll(".menu-btn");
+  const sections = document.querySelectorAll(".dashboard-section");
+
+  menuButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sectionToShow = btn.getAttribute("data-section");
+      menuButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      sections.forEach(sec => {
+        if (sec.id === sectionToShow) {
+          sec.classList.add("active");
+        } else {
+          sec.classList.remove("active");
+        }
+      });
+    });
+  });
+
+  // Alpha Vantage API parameters
+  const API_KEY = "817WZL1PKZUONACF"; // Your API key
+  // List of symbols to query (example Indian stocks on NSE)
+  const symbols = [
+    { symbol: "RELIANCE.NSE", name: "Reliance" },
+    { symbol: "TATAMOTORS.NSE", name: "Tata Motors" },
+    { symbol: "HDFC.NSE", name: "HDFC" },
+    { symbol: "INFY.NSE", name: "Infosys" },
+    { symbol: "TCS.NSE", name: "TCS" },
+  ];
+
+  // Fetch daily time series for one stock symbol from Alpha Vantage
+  async function fetchStockDaily(symbol) {
+    const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${API_KEY}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data["Time Series (Daily)"]) {
+        return data["Time Series (Daily)"];
+      } else {
+        console.warn("API error or limit hit for", symbol, data);
+        return null;
+      }
+    } catch (error) {
+      console.error("Fetch error for", symbol, error);
+      return null;
+    }
+  }
+
+  // Parse daily time series to get latest close, change %, and volume
+  function parseLatestData(timeSeries) {
+    if (!timeSeries) return null;
+    const dates = Object.keys(timeSeries).sort((a,b) => new Date(b) - new Date(a));
+    if (dates.length < 2) return null;
+    const latest = timeSeries[dates[0]];
+    const prev = timeSeries[dates[1]];
+    const price = parseFloat(latest["4. close"]);
+    const prevPrice = parseFloat(prev["4. close"]);
+    const changePercent = ((price - prevPrice) / prevPrice) * 100;
+    const volume = parseInt(latest["5. volume"]);
+    return { price, changePercent, volume };
+  }
+
+  // Main update function to fetch data and update UI
+  async function updateDashboard() {
+    let stockDetails = [];
+    for (const s of symbols) {
+      const series = await fetchStockDaily(s.symbol);
+      const parsed = parseLatestData(series);
+      if (parsed) {
+        stockDetails.push({
+          symbol: s.symbol,
+          name: s.name,
+          price: parsed.price,
+          changePercent: parsed.changePercent,
+          volume: parsed.volume,
+          // Mock beta as random between 1.0 and 1.8 for demo
+          beta: (Math.random() * 0.8 + 1).toFixed(2),
+        });
+      }
+    }
+    // Filter logic based on fetched data
+    updateScreener(stockDetails);
+
+    // Fill Smart Money Scout with placeholders for now
+    document.getElementById("inst-inflows").innerText = "RELIANCE +240M, ICICI +200M";
+    document.getElementById("big-player-entries").innerText = "TATA Steel, Axis Bank";
+
+    // Render index chart
+    renderIndexChart();
+  }
+
+  // Screener filter and UI update
+  function updateScreener(stockData) {
+    if (!stockData || stockData.length === 0) {
+      document.getElementById("high-beta").innerText = "Data unavailable";
+      document.getElementById("top-breakouts").innerText = "Data unavailable";
+      document.getElementById("volume-leaders").innerText = "Data unavailable";
+      return;
+    }
+    const betaThreshold = 1.3;
+    const changeThreshold = 1.0;
+    const volumeThreshold = 1000000;
+
+    const highBetaStocks = stockData.filter(s => s.beta > betaThreshold).map(s => s.name).join(", ") || "None";
+    const topBreakouts = stockData.filter(s => s.changePercent > changeThreshold).map(s => s.name).join(", ") || "None";
+    const volumeLeaders = stockData.filter(s => s.volume > volumeThreshold).map(s => s.name).join(", ") || "None";
+
+    document.getElementById("high-beta").innerText = highBetaStocks;
+    document.getElementById("top-breakouts").innerText = topBreakouts;
+    document.getElementById("volume-leaders").innerText = volumeLeaders;
+  }
+
+  // Chart.js example for Index Scout section
+  function renderIndexChart() {
+    const ctx = document.getElementById("indexChart").getContext("2d");
+    const data = {
+      labels: ["9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM"],
+      datasets: [
+        {
+          label: "NIFTY",
+          data: [17500, 17530, 17480, 17520, 17560, 17510, 17580],
+          borderColor: "#55a6f0",
+          backgroundColor: "rgba(85, 166, 240, 0.2)",
+          fill: true,
+          tension: 0.3,
+        },
+        {
+          label: "BANKNIFTY",
+          data: [41000, 40950, 41020, 41100, 41080, 41150, 41200],
+          borderColor: "#f0a655",
+          backgroundColor: "rgba(240, 166, 85, 0.2)",
+          fill: true,
+          tension: 0.3,
+        },
+      ],
+    };
+    const config = {
+      type: "line",
+      data: data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: "#ccc" } },
+        },
+        scales: {
+          x: { ticks: { color: "#aaa" } },
+          y: { ticks: { color: "#aaa" } },
+        },
+      },
+    };
+    new Chart(ctx, config);
+  }
+
+  window.onload = updateDashboard;
+</script>
+</body>
+</html>
